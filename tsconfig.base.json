@@ -492,6 +492,9 @@
       "@activepieces/piece-quickzu": [
         "packages/pieces/community/quickzu/src/index.ts"
       ],
+      "@activepieces/piece-quoti": [
+        "packages/pieces/community/quoti/src/index.ts"
+      ],
       "@activepieces/piece-rabbitmq": [
         "packages/pieces/community/rabbitmq/src/index.ts"
       ],
