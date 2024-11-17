@@ -338,6 +338,7 @@
       "@activepieces/piece-json": [
         "packages/pieces/community/json/src/index.ts"
       ],
+      "@activepieces/piece-jwt": ["packages/pieces/community/jwt/src/index.ts"],
       "@activepieces/piece-kimai": [
         "packages/pieces/community/kimai/src/index.ts"
       ],
