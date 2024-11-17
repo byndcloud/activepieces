@@ -119,9 +119,7 @@
   ],
   "tasksRunnerOptions": {
     "default": {
-      "options": {
-        "useDaemonProcess": false
-      }
+      "options": {}
     }
   },
   "release": {
@@ -129,5 +127,6 @@
       "preVersionCommand": "npx nx run-many -t build"
     }
   },
-  "useLegacyCache": true
+  "useLegacyCache": true,
+  "useDaemonProcess": false
 }
