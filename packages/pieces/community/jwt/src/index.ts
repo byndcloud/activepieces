@@ -5,7 +5,7 @@
     export const jwtAuth = PieceAuth.SecretText({
       displayName: 'Signing Private Key',
       required: true,
-      description: 'Please use the following bash command to convert your key from multi-line to single line key: `awk \'NF {sub(/\r/, ""); printf "%s\\n",$0;}\' key.pem > key.cer`   ',
+      description: 'Please use the following bash command to convert your key from multi-line to single line key: `awk \'NF {sub(/\\r/, ""); printf "%s\\\\n",$0;}\' key.pem > key.cer`   ',
     });
 
     export const jwt = createPiece({
