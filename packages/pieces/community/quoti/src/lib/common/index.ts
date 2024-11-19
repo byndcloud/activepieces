@@ -13,7 +13,7 @@ import {
 } from '@activepieces/pieces-common';
 import { QuotiAuthType } from '../../index';
 import axios from 'axios';
-type DatabaseListResponse = {
+export type DatabaseListResponse = {
   id: number;
   name: string;
   type: string;
@@ -43,6 +43,7 @@ export const databasesDropdown = Property.Dropdown<string>({
       },
       queryParams: {
         'where[types][0]': 'table',
+        'where[types][1]': 'legacyModel',
         limit: '9999',
       },
     };
@@ -52,7 +53,7 @@ export const databasesDropdown = Property.Dropdown<string>({
     );
 
     for (const form of response.body) {
-      options.push({ label: form.name, value: form.name });
+      options.push({ label: form.name, value: `${form.type}||${form.name}` });
     }
 
     return {
