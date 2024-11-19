@@ -5,6 +5,7 @@ import {
   PiecePropValueSchema,
   TriggerStrategy,
   createTrigger,
+  Property
 } from '@activepieces/pieces-framework';
 import { config } from 'process';
 
@@ -17,7 +18,13 @@ export const databaseTrigger = createTrigger({
     'Define triggers that will be call whenever a data on a table is: retrieved, deleted, ',
     props: {
         databaseSlug: databasesDropdown,
-        events: eventsDropdown
+        events: eventsDropdown,
+        synchronous: Property.Checkbox({
+          displayName: 'Synchronous responses',
+          description: 'useful for returning errors and preventing the action from being executed. Remember to setup the respond HTTP node at the end.',
+          required: false,
+          defaultValue: false,
+        })
         },
   sampleData: {},
   type: TriggerStrategy.WEBHOOK,
@@ -27,14 +34,18 @@ export const databaseTrigger = createTrigger({
     // const ngrokUrl =
     //   'https://829e-2804-14d-5487-8288-48f9-a6fd-628c-d418.ngrok-free.app';
     // const localhostUrl = 'http://localhost:4200';
+    let webhookUrl = context.webhookUrl
+    if(!webhookUrl.endsWith('/test') &&  context.propsValue['synchronous']){
+      webhookUrl += '/sync'
+    }
     const webhook = await axios.post(
       `https://api.quoti.cloud/api/v1/${context.auth.org_slug}/hooks`,
       {
-        resourceName: context.propsValue['databaseSlug'] || 'teste_levi',
+        resourceName: context.propsValue['databaseSlug'],
         resourceType: 'table',
         active: true,
         handler: {
-          url: context.webhookUrl,
+          url: webhookUrl,
           type: 'http',
         },
         Events: context.propsValue['events']?.map((e) => {
@@ -55,7 +66,7 @@ export const databaseTrigger = createTrigger({
     );
     console.log(
       'Em tese está habilitado o webhook na URL',
-      context.webhookUrl
+      webhookUrl
     );
     console.log(JSON.stringify(webhook.data));
     await context.store?.put<WebhookInformation>('_new_submission_trigger', {
