@@ -1,5 +1,5 @@
 import { quotiAuth } from '../../';
-import {databasesDropdown, eventsDropdown} from '../common'
+import {databasesDropdown, eventsDropdown, DatabaseListResponse} from '../common'
 import axios from 'axios';
 import {
   PiecePropValueSchema,
@@ -17,7 +17,7 @@ export const databaseTrigger = createTrigger({
   description:
     'Define triggers that will be call whenever a data on a table is: retrieved, deleted, ',
     props: {
-        databaseSlug: databasesDropdown,
+        database: databasesDropdown,
         events: eventsDropdown,
         synchronous: Property.Checkbox({
           displayName: 'Synchronous responses',
@@ -31,18 +31,18 @@ export const databaseTrigger = createTrigger({
   async onEnable(context) {
     // implement webhook creation logic
     console.log('Checking auth=> ', context.auth)
-    // const ngrokUrl =
-    //   'https://829e-2804-14d-5487-8288-48f9-a6fd-628c-d418.ngrok-free.app';
-    // const localhostUrl = 'http://localhost:4200';
     let webhookUrl = context.webhookUrl
     if(!webhookUrl.endsWith('/test') &&  context.propsValue['synchronous']){
       webhookUrl += '/sync'
     }
+    const databaseSelected = context.propsValue['database']
+    const databaseType = databaseSelected?.split(`||`)[0]
+    const databaseName = databaseSelected?.split(`||`)[1]
     const webhook = await axios.post(
       `https://api.quoti.cloud/api/v1/${context.auth.org_slug}/hooks`,
       {
-        resourceName: context.propsValue['databaseSlug'],
-        resourceType: 'table',
+        resourceName: databaseName,
+        resourceType: databaseType === 'legacyModel' ? 'model' : databaseType,
         active: true,
         handler: {
           url: webhookUrl,
