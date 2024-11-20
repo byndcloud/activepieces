@@ -1,10 +1,10 @@
 
     import { createPiece, PieceAuth, Property } from "@activepieces/pieces-framework";
-    import { getDatabase } from "./lib/actions/get-database";
-    import { listDatabase } from "./lib/actions/list-database";
-    import { updateDatabase } from "./lib/actions/update-database";
-    import {deleteDatabaseItem} from './lib/actions/delete-database';
-    import {createDatabaseItem} from './lib/actions/create-database';
+    // import { getTicket } from "./lib/actions/get-ticket";
+    // import { listTicket } from "./lib/actions/list-ticket";
+    // import { updateTicket } from "./lib/actions/update-ticket";
+    // import {deleteTicket} from './lib/actions/delete-ticket';
+    import {createTicket} from './lib/actions/create-ticket';
     import { databaseTrigger } from "./lib/triggers/database-trigger";
     import { createCustomApiCallAction } from '@activepieces/pieces-common';
     export type QuotiAuthType = { org_slug: string; BearerStatic: string };
@@ -42,9 +42,15 @@
       displayName: "Legis",
       auth: quotiAuth,
       minimumSupportedRelease: '0.20.0',
-      logoUrl: "https://storage.googleapis.com/beyond-quoti-users-files/Quoti.svg",
+      logoUrl: "https://storage.googleapis.com/beyond-quoti-users-files/legis_icon.svg",
       authors: [],
-      actions: [],
+      actions: [
+        createTicket, 
+        // listTicket, 
+        // getTicket, 
+        // updateTicket, 
+        // deleteTicket
+    ],
       triggers: [databaseTrigger],
     });
     
