@@ -6,7 +6,7 @@ import {
   DynamicPropsValue
 } from '@activepieces/pieces-framework';
 import { httpClient, HttpMethod } from '@activepieces/pieces-common';
-import {databasesDropdown, filterField, databaseAllFieldsForm} from '../common'
+import {databasesDropdown, filterField, databaseSelectedFieldsForm, databaseFields} from '../common'
 import { quotiAuth, QuotiAuthType } from '../..';
 import axios from 'axios';
 type QueryParams = {
@@ -21,7 +21,8 @@ export const createDatabaseItem = createAction({
   description: 'Create a specific item on a database',
   props: {
     databaseSlug: databasesDropdown,
-    fields: databaseAllFieldsForm,
+    fieldsUsed: databaseFields,
+    fields: databaseSelectedFieldsForm,
     hasAdvancedProps: Property.Checkbox({
       displayName: 'Advanced',
       description: 'Check this box to show advanced configuration',
@@ -32,7 +33,7 @@ export const createDatabaseItem = createAction({
       description: 'Dynamic Form',
       displayName: 'Dynamic Form',
       required: true,
-      refreshers: ['hasAdvancedProps'],
+      refreshers: ['hasAdvancedProps', 'fields'],
       props: async (propsValue) => {
         // const authentication = propsValue['authentication'];
         const hasAdvancedProps = propsValue['hasAdvancedProps']
@@ -42,7 +43,7 @@ export const createDatabaseItem = createAction({
               displayName: 'Body JSON',
               description: 'If you use this option all previous settings will be OVERWRITE.',
               required: false,
-              defaultValue: {"a": "b", "date": "2024-22-01"},
+              defaultValue: propsValue['fields'],
             })
           };
       
@@ -61,9 +62,7 @@ export const createDatabaseItem = createAction({
     } else {
       if(context.propsValue['fields'] && Object.keys(context.propsValue['fields']).length > 0){
         for (const prop of Object.keys(context.propsValue['fields'])){
-          if(context.propsValue['fields'][prop]){
-            body[prop] = context.propsValue['fields'][prop] 
-          }
+            body[prop] = context.propsValue['fields'][prop]
         }
       }
     }
