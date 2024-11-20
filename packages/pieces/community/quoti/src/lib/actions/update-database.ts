@@ -6,7 +6,7 @@ import {
   DynamicPropsValue
 } from '@activepieces/pieces-framework';
 import { httpClient, HttpMethod } from '@activepieces/pieces-common';
-import {databasesDropdown, filterField, databaseAllFieldsForm} from '../common'
+import {databasesDropdown, filterField, databaseSelectedFieldsForm, databaseFields} from '../common'
 import { quotiAuth, QuotiAuthType } from '../..';
 import axios from 'axios';
 type QueryParams = {
@@ -23,11 +23,12 @@ export const updateDatabase = createAction({
     databaseSlug: databasesDropdown,
     id: Property.ShortText({
       displayName: 'Id',
-      description: 'Please enter a valid ID to retrieve an item from the selected database.',
+      description: 'Please enter a valid ID to update an item from the selected database.',
       required: false,
       defaultValue: '',
     }),
-    updatedFields: databaseAllFieldsForm,
+    fieldsUsed: databaseFields,
+    updatedFields: databaseSelectedFieldsForm,
     hasAdvancedProps: Property.Checkbox({
       displayName: 'Advanced',
       description: 'Check this box to show advanced configuration',
@@ -38,17 +39,19 @@ export const updateDatabase = createAction({
       description: 'Dynamic Form',
       displayName: 'Dynamic Form',
       required: true,
-      refreshers: ['hasAdvancedProps'],
+      refreshers: ['hasAdvancedProps', 'updatedFields'],
       props: async (propsValue) => {
         // const authentication = propsValue['authentication'];
         const hasAdvancedProps = propsValue['hasAdvancedProps']
         if(hasAdvancedProps) {
+          console.log('Checking updatedFields before')
+          console.log(JSON.stringify(propsValue['updatedFields']))
           const properties = {
             json: Property.Json({
               displayName: 'Body JSON',
               description: 'If you use this option all previous settings will be OVERWRITE.',
               required: false,
-              defaultValue: {"a": "b", "date": "2024-22-01"},
+              defaultValue: propsValue['updatedFields'],
             })
           };
       
@@ -67,9 +70,7 @@ export const updateDatabase = createAction({
     } else {
       if(context.propsValue['updatedFields'] && Object.keys(context.propsValue['updatedFields']).length > 0){
         for (const prop of Object.keys(context.propsValue['updatedFields'])){
-          if(context.propsValue['updatedFields'][prop]){
             body[prop] = context.propsValue['updatedFields'][prop] 
-          }
         }
       }
     }
