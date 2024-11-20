@@ -1,29 +1,99 @@
-import { quotiAuth } from '../../';
-import {databasesDropdown, eventsDropdown, DatabaseListResponse} from '../common'
+import { quotiAuth, QuotiAuthType } from '../../';
 import axios from 'axios';
 import {
   PiecePropValueSchema,
   TriggerStrategy,
   createTrigger,
-  Property
+  Property,
+  DropdownOption
 } from '@activepieces/pieces-framework';
-import { config } from 'process';
-
+import {HttpRequest,
+  HttpMethod,
+  httpClient} from '@activepieces/pieces-common'
+type FormItems = {
+  id: number;
+  name: string;
+  selectableValues: string[];
+}[];
+type FormResponse = {
+  id: number;
+  name: string;
+  type: string;
+  items: FormItems;
+};
 export const databaseTrigger = createTrigger({
   // auth: check https://www.activepieces.com/docs/developers/piece-reference/authentication,
   auth: quotiAuth,
   name: 'databaseTrigger',
-  displayName: 'Database Trigger',
+  displayName: 'Nova atividade criada',
   description:
-    'Define triggers that will be call whenever a data on a table is: retrieved, deleted, ',
+    'Inicia um fluxo quando uma nova atividade acontece',
     props: {
-        database: databasesDropdown,
-        events: eventsDropdown,
-        synchronous: Property.Checkbox({
-          displayName: 'Synchronous responses',
-          description: 'useful for returning errors and preventing the action from being executed. Remember to setup the respond HTTP node at the end.',
+        category: Property.StaticDropdown<string>({
+          displayName: 'Categoria',
+          description: 'Filtre o evento para que aconteça apenas quando for:',
+          required: true,
+            options: {
+              options: [
+                { label: 'Abertura de Prazo', value: 'Abertura de Prazo' },
+                { label: 'Cadastro Processo', value: 'Cadastro Processo' },
+                { label: 'Conclusão PA', value: 'Conclusão PA' }
+              ],
+          },
+        }),
+        type: Property.StaticDropdown<string>({
+          displayName: 'Tipo da atividade',
+          description: 'Filtre o evento para que aconteça apenas quando for:',
+          required: true,
+            options: {
+              options: [
+                { label: 'Audiência', value: 'audiencia' },
+                { label: 'Prazo', value: 'prazo' },
+                { label: 'Compromisso', value: 'compromisso' },
+                { label: 'Diligência', value: 'diligencia' }
+              ],
+          },
+        }),
+        subType: Property.Dropdown<string>({
+          displayName: 'Subtipo da atividade',
+          description: 'Filtre o evento para que aconteça apenas quando for:',
           required: false,
-          defaultValue: false,
+          refreshers: ['type'],
+          async options({ auth, type }) {
+          const authentication = auth as QuotiAuthType
+            if (!authentication) {
+              return {
+                disabled: true,
+                placeholder: 'Connect quoti serviceAccount',
+                options: [],
+              };
+            }
+            const options: DropdownOption<string>[] = [];
+            const request: HttpRequest = {
+              method: HttpMethod.GET,
+              url: `https://api.quoti.cloud/api/v1/${authentication.org_slug}/forms/100327`,
+              headers: {
+                BearerStatic: `${authentication.BearerStatic}`,
+              },
+              queryParams: {
+              },
+            };
+        
+            const response = await httpClient.sendRequest<FormResponse>(
+              request
+            );
+            const values = response.body.items.find(i => i.name === `subtipo_${type}`)?.selectableValues
+            if(values){
+              for (const key of values) {
+                options.push({ label: key, value: key });
+              }
+            }
+            return {
+              disabled: false,
+              placeholder: 'Selecione o subtipo',
+              options,
+            };
+          },
         })
         },
   sampleData: {},
@@ -32,23 +102,19 @@ export const databaseTrigger = createTrigger({
     // implement webhook creation logic
     console.log('Checking auth=> ', context.auth)
     let webhookUrl = context.webhookUrl
-    if(!webhookUrl.endsWith('/test') &&  context.propsValue['synchronous']){
-      webhookUrl += '/sync'
-    }
-    const databaseSelected = context.propsValue['database']
-    const databaseType = databaseSelected?.split(`||`)[0]
-    const databaseName = databaseSelected?.split(`||`)[1]
+    // Quando usamos isso as chamadas obrigatoriamente precisarão aguardar o final do fluxo
+    webhookUrl += '/sync'
     const webhook = await axios.post(
       `https://api.quoti.cloud/api/v1/${context.auth.org_slug}/hooks`,
       {
-        resourceName: databaseName,
-        resourceType: databaseType === 'legacyModel' ? 'model' : databaseType,
+        resourceName: 'Tickets',
+        resourceType: 'model',
         active: true,
         handler: {
           url: webhookUrl,
           type: 'http',
         },
-        Events: context.propsValue['events']?.map((e) => {
+        Events: ['afterCreate'].map((e) => {
             return {
                 name: e,
                 configs: { returnAfterData: ['afterUpdate'].includes(e) ? true : false, returnBeforeData: ['afterUpdate'].includes(e) ? true : false }
