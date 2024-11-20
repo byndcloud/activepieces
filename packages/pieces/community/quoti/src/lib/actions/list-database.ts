@@ -6,7 +6,7 @@ import {
   DynamicPropsValue
 } from '@activepieces/pieces-framework';
 import { httpClient, HttpMethod } from '@activepieces/pieces-common';
-import {databasesDropdown, filterField} from '../common'
+import {databasesDropdown, filterField, databaseFields, databaseSelectedFieldsForm} from '../common'
 import { quotiAuth } from '../..';
 import axios from 'axios';
 type QueryParams = {
@@ -21,12 +21,16 @@ export const listDatabase = createAction({
   description: 'List items from a database',
   props: {
     databaseSlug: databasesDropdown,
-    filterField,
-    filterValue: Property.ShortText({
-      displayName: 'Value',
-      description: 'Enter a value to filter by',
+    fieldsUsed: databaseFields,
+    filterFields: databaseSelectedFieldsForm,
+    filterOperator: Property.StaticDropdown({
+      displayName: `Filter Operator`,
+      description: ``,
       required: false,
-      defaultValue: '',
+      defaultValue: 'AND',
+      options: {
+        options: [{label: `AND`, value: `AND`}, {label: `OR`, value: `OR`}]
+      },
     }),
     limit: Property.ShortText({
       displayName: 'Limit',
@@ -45,17 +49,31 @@ export const listDatabase = createAction({
       description: 'Dynamic Form',
       displayName: 'Dynamic Form',
       required: true,
-      refreshers: ['hasAdvancedProps'],
+      refreshers: ['hasAdvancedProps', 'filterFields', 'filterOperator'],
       props: async (propsValue) => {
         // const authentication = propsValue['authentication'];
         const hasAdvancedProps = propsValue['hasAdvancedProps']
         if(hasAdvancedProps) {
+          let where: {
+            [key: string]: any;
+          } = {}
+          const filterOperator = `${propsValue['filterOperator']}`;
+          if(propsValue['filterFields'] && Object.keys(propsValue['filterFields']).length > 0){
+            for (const prop of Object.keys(propsValue['filterFields'])){
+              where[prop] = propsValue['filterFields'][prop]
+            }
+          }
+          if(filterOperator &&  filterOperator === 'OR'){
+            where = {
+              or: where
+            }
+          }
           const properties = {
             json: Property.Json({
               displayName: 'Advanced JSON',
               description: 'If you use this option all previous filter and settings will be OVERWRITE.',
               required: false,
-              defaultValue: {"where": {"a": "c"}, "limit": 25, "params": {}},
+              defaultValue: {"where": where, "limit": 25, "params": {}},
             })
           };
       
@@ -68,16 +86,26 @@ export const listDatabase = createAction({
     },
   async run(context) {
     let queryParams: QueryParams = {
-      limit: `${context.propsValue['limit']}`,
+      limit: `${context.propsValue['limit']}`
     }
-    console.log('TESTE de ADVANCED PROPS', JSON.stringify(context.propsValue['advancedProps']))
-    if(context.propsValue['hasAdvancedProps'] && Object.keys(context.propsValue['advancedProps']['json']).length > 0 ){
+    const where: {
+      [key: string]: any;
+    } = {}
+    if(context.propsValue['hasAdvancedProps'] && context.propsValue['advancedProps'] && context.propsValue['advancedProps']['json'] && Object.keys(context.propsValue['advancedProps']['json']).length > 0 ){
       queryParams = context.propsValue['advancedProps']['json']
     } else{
-    if(context.propsValue['filterField'] && context.propsValue['filterValue'] && context.propsValue['filterValue'].length > 0){
-      const key = `where[${context.propsValue['filterField']}]`
-      queryParams[key] = context.propsValue['filterValue']
-    }
+      if(context.propsValue['filterFields'] && Object.keys(context.propsValue['filterFields']).length > 0){
+        for (const prop of Object.keys(context.propsValue['filterFields'])){
+          where[prop] = context.propsValue['filterFields'][prop]
+        }
+      }
+      if(context.propsValue['filterOperator'] && context.propsValue['filterOperator'] === 'OR'){
+        queryParams['where'] = {
+          or: where
+        }
+      } else {
+        queryParams['where'] = where
+      }
     }
     const res = await axios.get(`https://api.quoti.cloud/api/v1/${context.auth.org_slug}/resources/${context.propsValue['databaseSlug']}`, {
       headers: {
