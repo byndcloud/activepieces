@@ -1,5 +1,5 @@
 import { quotiAuth } from '../../';
-import {databasesDropdown, eventsDropdown, DatabaseListResponse} from '../common'
+import {allTablesDropdown, eventsDropdown, DatabaseListResponse} from '../common'
 import axios from 'axios';
 import {
   PiecePropValueSchema,
@@ -17,7 +17,7 @@ export const databaseTrigger = createTrigger({
   description:
     'Define triggers that will be call whenever a data on a table is: retrieved, deleted, ',
     props: {
-        database: databasesDropdown,
+        database: allTablesDropdown,
         events: eventsDropdown,
         synchronous: Property.Checkbox({
           displayName: 'Synchronous responses',
