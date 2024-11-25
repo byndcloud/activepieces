@@ -55,7 +55,7 @@
           // Mapping the auth object to the needed authorization headers
           authMapping: async (auth: any) => {
             return {
-              'BearerStatic': `${auth.BearerStatic.BearerStatic}`
+              'BearerStatic': `${auth.BearerStatic}`
             }
           }
         })
