@@ -41,7 +41,7 @@
     export const quoti = createPiece({
       displayName: "Quoti",
       auth: quotiAuth,
-      minimumSupportedRelease: '0.20.0',
+      minimumSupportedRelease: '0.36.1',
       logoUrl: "https://storage.googleapis.com/beyond-quoti-users-files/Quoti.svg",
       authors: [],
       actions: [listDatabase, getDatabase, createDatabaseItem, updateDatabase, deleteDatabaseItem,

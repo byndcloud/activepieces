@@ -2,7 +2,6 @@ import {
   createAction,
   Property,
   PieceAuth,
-  Validators,
   DynamicPropsValue
 } from '@activepieces/pieces-framework';
 import { httpClient, HttpMethod } from '@activepieces/pieces-common';
