@@ -2,7 +2,6 @@ import {
   createAction,
   Property,
   PieceAuth,
-  Validators,
   DynamicPropsValue
 } from '@activepieces/pieces-framework';
 import { httpClient, HttpMethod } from '@activepieces/pieces-common';
@@ -36,8 +35,7 @@ export const listDatabase = createAction({
       displayName: 'Limit',
       description: 'Enter a value',
       required: true,
-      defaultValue: '25',
-      validators: [Validators.pattern(/^[0-9]+$/)]
+      defaultValue: '25'
     }),
     hasAdvancedProps: Property.Checkbox({
       displayName: 'Advanced',
