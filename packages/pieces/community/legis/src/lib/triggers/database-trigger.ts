@@ -1,4 +1,4 @@
-import { quotiAuth, QuotiAuthType } from '../../';
+import { legisAuth, QuotiAuthType } from '../../';
 import axios from 'axios';
 import {
   PiecePropValueSchema,
@@ -21,9 +21,23 @@ type FormResponse = {
   type: string;
   items: FormItems;
 };
+type BodyTicketCreated = {
+  data: {
+    requestData : {
+      body: {
+        id: number;
+        ticketTypeId: number,
+        parentTicketId: number,
+        categoryId: number
+      }
+    }
+  }
+}
+//const lastData: any = null;
+
 export const databaseTrigger = createTrigger({
   // auth: check https://www.activepieces.com/docs/developers/piece-reference/authentication,
-  auth: quotiAuth,
+  auth: legisAuth,
   name: 'databaseTrigger',
   displayName: 'Nova atividade criada',
   description:
@@ -40,70 +54,23 @@ export const databaseTrigger = createTrigger({
                 { label: 'Conclusão PA', value: 'Conclusão PA' }
               ],
           },
-        }),
-        type: Property.StaticDropdown<string>({
-          displayName: 'Tipo da atividade',
-          description: 'Filtre o evento para que aconteça apenas quando for:',
-          required: true,
-            options: {
-              options: [
-                { label: 'Audiência', value: 'audiencia' },
-                { label: 'Prazo', value: 'prazo' },
-                { label: 'Compromisso', value: 'compromisso' },
-                { label: 'Diligência', value: 'diligencia' }
-              ],
-          },
-        }),
-        subType: Property.Dropdown<string>({
-          displayName: 'Subtipo da atividade',
-          description: 'Filtre o evento para que aconteça apenas quando for:',
-          required: false,
-          refreshers: ['type'],
-          async options({ auth, type }) {
-          const authentication = auth as QuotiAuthType
-            if (!authentication) {
-              return {
-                disabled: true,
-                placeholder: 'Connect quoti serviceAccount',
-                options: [],
-              };
-            }
-            const options: DropdownOption<string>[] = [];
-            const request: HttpRequest = {
-              method: HttpMethod.GET,
-              url: `https://api.quoti.cloud/api/v1/${authentication.org_slug}/forms/100327`,
-              headers: {
-                BearerStatic: `${authentication.BearerStatic}`,
-              },
-              queryParams: {
-              },
-            };
-        
-            const response = await httpClient.sendRequest<FormResponse>(
-              request
-            );
-            const values = response.body.items.find(i => i.name === `subtipo_${type}`)?.selectableValues
-            if(values){
-              for (const key of values) {
-                options.push({ label: key, value: key });
-              }
-            }
-            return {
-              disabled: false,
-              placeholder: 'Selecione o subtipo',
-              options,
-            };
-          },
         })
         },
   sampleData: {},
   type: TriggerStrategy.WEBHOOK,
   async onEnable(context) {
     // implement webhook creation logic
-    console.log('Checking auth=> ', context.auth)
-    let webhookUrl = context.webhookUrl
+    const webhookUrl = context.webhookUrl
     // Quando usamos isso as chamadas obrigatoriamente precisarão aguardar o final do fluxo
-    webhookUrl += '/sync'
+    //webhookUrl += '/sync'
+    const condtions = context.propsValue
+    let ticketType =  null
+    if(condtions['category'] === 'Abertura de Prazo') {
+       ticketType = 100050
+    }
+    else {
+      ticketType = 100047
+    }
     const webhook = await axios.post(
       `https://api.quoti.cloud/api/v1/${context.auth.org_slug}/hooks`,
       {
@@ -120,7 +87,21 @@ export const databaseTrigger = createTrigger({
                 configs: { returnAfterData: ['afterUpdate'].includes(e) ? true : false, returnBeforeData: ['afterUpdate'].includes(e) ? true : false }
             }
         }),
-        conditions: null,
+        conditions: {
+          all: [
+
+            {
+              "fact": 'requestData',
+              "path": `$.body.ticketTypeId`,
+              "value": [
+                ticketType
+              ],
+              "operator": "in",
+              "description": 'Hooks acionado quando a categoria for igual o tipo do trigger'
+
+            }
+          ]
+        },
         id: null,
       },
       {
@@ -130,11 +111,6 @@ export const databaseTrigger = createTrigger({
         },
       }
     );
-    console.log(
-      'Em tese está habilitado o webhook na URL',
-      webhookUrl
-    );
-    console.log(JSON.stringify(webhook.data));
     await context.store?.put<WebhookInformation>('_new_submission_trigger', {
       id: webhook.data.id,
     });
@@ -160,14 +136,64 @@ export const databaseTrigger = createTrigger({
         res.status
       );
     } catch(e) {
-        console.error('Error disabling webhook', e)
+      throw new Error(`Error disabling webhook: ${e}`);
     }
     }
   },
   async run(context) {
-    return [context.payload.body];
+    const request  = context.payload.body as BodyTicketCreated
+    const ticketId = request.data.requestData.body.id
+    const ticketTypeId = request.data.requestData.body.ticketTypeId
+    const parentTicketId = request.data.requestData.body.parentTicketId
+    let response
+    try {
+      response = await axios.get(
+        `https://api.csm.quoti.cloud/api/v1/${context.auth.org_slug}/tickets/${ticketId}`, {
+          params: {
+            additionalInfos: {
+              ticketTypeId: ticketTypeId
+            },
+
+          },
+          headers: {
+            BearerStatic: context.auth.BearerStatic
+          }
+        }
+      );
+    } catch (error) {
+      response = null;
+      throw new Error(`Erro na requisição: ${error}`);
+    }
+
+    let responseProcess
+    if (parentTicketId) {
+      try {
+        const response = await axios.get(
+          `https://api.csm.quoti.cloud/api/v1/${context.auth.org_slug}/tickets/${parentTicketId}`, {
+            params: {
+              additionalInfos: {
+                ticketTypeId: 100047
+              }
+            },
+            headers: {
+              BearerStatic: context.auth.BearerStatic
+            }
+          }
+        );
+        responseProcess = response.data;
+      } catch (error) {
+        responseProcess = null;
+        throw new Error(`Erro na requisição: ${error}`);
+      }
+    }
+    return [{
+      ...request,
+      atividade: response ? response.data : null,
+      processo: responseProcess ? responseProcess : null,
+    }];
   },
 });
+
 
 interface WebhookInformation {
   id: number;
