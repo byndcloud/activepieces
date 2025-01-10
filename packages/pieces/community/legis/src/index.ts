@@ -8,18 +8,18 @@
     import { databaseTrigger } from "./lib/triggers/database-trigger";
     import { createCustomApiCallAction } from '@activepieces/pieces-common';
     export type QuotiAuthType = { org_slug: string; BearerStatic: string };
-    
-    export const quotiAuth = PieceAuth.CustomAuth({
-      description: 'Enter Quoti Auth authentication details',
+
+    export const legisAuth = PieceAuth.CustomAuth({
+      description: 'Coloque as credenciais do legis',
       props: {
           org_slug: Property.ShortText({
-              displayName: 'Org Slug',
-              description: 'Enter the base organization info present on your URL, like: https://quoti.cloud/$ORG_SLUG$/',
+              displayName: 'Ambiente',
+              description: 'O ambiente pode ser obtido através da url do legis: https://dashboard.legishub.com.br/$AMBIENTE$/',
               required: true,
           }),
           BearerStatic: PieceAuth.SecretText({
-              displayName: 'BearerStatic',
-              description: 'Enter the access token',
+              displayName: 'Conta de serviço',
+              description: 'Coloque o token da conta de serviço que pode ser obtido pelo link:  https://dashboard.legishub.com.br/serviceaccounts',
               required: true
           })
       },
@@ -32,25 +32,24 @@
           }
           return {
               valid: false,
-              error: 'Invalid Auth'
+              error: 'Token inválido'
           }
       },
       required: true
   })
-    
+
     export const legis = createPiece({
       displayName: "Legis",
-      auth: quotiAuth,
+      auth: legisAuth,
       minimumSupportedRelease: '0.20.0',
       logoUrl: "https://storage.googleapis.com/beyond-quoti-users-files/legis_icon.svg",
       authors: [],
       actions: [
-        createTicket, 
-        // listTicket, 
-        // getTicket, 
-        // updateTicket, 
+        createTicket,
+        // listTicket,
+        // getTicket,
+        // updateTicket,
         // deleteTicket
     ],
       triggers: [databaseTrigger],
     });
-    
