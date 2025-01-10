@@ -41,7 +41,7 @@
     export const legis = createPiece({
       displayName: "Legis",
       auth: legisAuth,
-      minimumSupportedRelease: '0.20.0',
+      minimumSupportedRelease: '0.36.1',
       logoUrl: "https://storage.googleapis.com/beyond-quoti-users-files/legis_icon.svg",
       authors: [],
       actions: [
