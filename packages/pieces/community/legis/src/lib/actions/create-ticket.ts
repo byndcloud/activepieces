@@ -2,7 +2,6 @@ import {
   createAction,
   Property,
   PieceAuth,
-  Validators,
   DynamicPropsValue,
   DropdownOption,
 } from '@activepieces/pieces-framework';
