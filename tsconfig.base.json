@@ -317,6 +317,9 @@
       "@activepieces/piece-http": [
         "packages/pieces/community/http/src/index.ts"
       ],
+      "@activepieces/piece-http-batch": [
+        "packages/pieces/community/http-batch/src/index.ts"
+      ],
       "@activepieces/piece-hubspot": [
         "packages/pieces/community/hubspot/src/index.ts"
       ],
@@ -350,10 +353,10 @@
       "@activepieces/piece-json": [
         "packages/pieces/community/json/src/index.ts"
       ],
+      "@activepieces/piece-jwt": ["packages/pieces/community/jwt/src/index.ts"],
       "@activepieces/piece-kallabot-ai": [
         "packages/pieces/community/kallabot-ai/src/index.ts"
       ],
-      "@activepieces/piece-jwt": ["packages/pieces/community/jwt/src/index.ts"],
       "@activepieces/piece-kimai": [
         "packages/pieces/community/kimai/src/index.ts"
       ],
