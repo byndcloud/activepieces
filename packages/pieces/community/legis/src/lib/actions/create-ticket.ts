@@ -13,6 +13,7 @@ import {
 import { databaseAllFieldsForm } from '../common';
 import { legisAuth, QuotiAuthType } from '../..';
 import axios from 'axios';
+import { AxiosError } from 'axios';
 type CatalogResponse = {
   id: number;
   name: string;
@@ -256,6 +257,8 @@ export const createTicket = createAction({
   },
   async run(context) {
     let body: QueryParams = {};
+    const TICKET_TYPE_ID_PROCESS =  100047
+    const ASSIGNED_TO_QUEUE_PROCESS_ID = 100440
     if (
       context.propsValue['hasAdvancedProps'] &&
       Object.keys(context.propsValue['advancedProps']['json']).length > 0
@@ -294,7 +297,8 @@ export const createTicket = createAction({
                     limitDay = subtractDays(new Date(dateCurrent), days);
                   }
               }
-              body['data_hora'] = limitDay.toISOString();
+              body['data_hora'] = limitDay?.toISOString().split(".")?.[0]
+;
             }
         });
         }
@@ -320,7 +324,8 @@ export const createTicket = createAction({
       {
         params: {
           where: {
-            ticketTypeFormResponseId: numberAdditionalProcess.data[0].id
+            ticketTypeFormResponseId: numberAdditionalProcess.data[0].id,
+            ticketTypeId: TICKET_TYPE_ID_PROCESS
           }
         },
         headers: {
@@ -328,32 +333,38 @@ export const createTicket = createAction({
         }
       }
     );
-    const {categoryId, solicitationType} = JSON.parse(`${context.propsValue['catalogItem']}`)
-    const bodyProcess = {
-      "description": 'Prazo compromisso',
-      "body": "",
-      "recipient":  Number(body['Responsavel']) || null,
-      "ticketTypeId": Number(solicitationType),
-      "categoryId": categoryId,
-      "status": "pendente",
-      "assignedTo": 100440,
-      "assignedToUser": Number(body['Responsavel']) || null,
-      "parentTicketId": numberProcess.data.results[0].id,
-      "ticketTypeAdditionalInfo": {
-        ...body,
-        "forma_de_abertura": "Automática"
+    try {
+      const { categoryId, solicitationType } = JSON.parse(`${context.propsValue['catalogItem']}`)
+      const bodyProcess = {
+        "description": 'Prazo compromisso',
+        "body": "",
+        "recipient":  Number(body['Responsavel']) || null,
+        "ticketTypeId": Number(solicitationType),
+        "categoryId": categoryId,
+        "status": "pendente",
+        "assignedTo": ASSIGNED_TO_QUEUE_PROCESS_ID,
+        "assignedToUser": Number(body['Responsavel']) || null,
+        "parentTicketId": numberProcess.data?.results ? numberProcess.data?.results[0]?.id : null,
+        "ticketTypeAdditionalInfo": {
+          ...body,
+          "forma_de_abertura": "Automática"
+        }
       }
+      const process = await axios.post(
+        `https://api.csm.quoti.cloud/api/v1/${context.auth.org_slug}/tickets`,
+        bodyProcess,
+        {
+          headers: {
+            BearerStatic: context.auth.BearerStatic,
+          },
+        }
+      )
+      return process.data
+    } catch (error) {
+      const handledError  = error as AxiosError
+      return {status: handledError.response?.status, message: handledError.response?.data }
     }
-    const process = await axios.post(
-      `https://api.csm.quoti.cloud/api/v1/${context.auth.org_slug}/tickets`,
-      bodyProcess,
-      {
-        headers: {
-          BearerStatic: context.auth.BearerStatic,
-        },
-      }
-    )
-    return process.data
+
   },
 });
 
