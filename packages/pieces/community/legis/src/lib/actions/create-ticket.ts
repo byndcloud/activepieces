@@ -257,6 +257,8 @@ export const createTicket = createAction({
   },
   async run(context) {
     let body: QueryParams = {};
+    const TICKET_TYPE_ID_PROCESS =  100047
+    const ASSIGNED_TO_QUEUE_PROCESS_ID = 100440
     if (
       context.propsValue['hasAdvancedProps'] &&
       Object.keys(context.propsValue['advancedProps']['json']).length > 0
@@ -295,7 +297,7 @@ export const createTicket = createAction({
                     limitDay = subtractDays(new Date(dateCurrent), days);
                   }
               }
-              body['data_hora'] = limitDay.toISOString().split(".")[0]
+              body['data_hora'] = limitDay?.toISOString().split(".")?.[0]
 ;
             }
         });
@@ -323,7 +325,7 @@ export const createTicket = createAction({
         params: {
           where: {
             ticketTypeFormResponseId: numberAdditionalProcess.data[0].id,
-            ticketTypeId: 100047
+            ticketTypeId: TICKET_TYPE_ID_PROCESS
           }
         },
         headers: {
@@ -332,7 +334,7 @@ export const createTicket = createAction({
       }
     );
     try {
-      const {categoryId, solicitationType} = JSON.parse(`${context.propsValue['catalogItem']}`)
+      const { categoryId, solicitationType } = JSON.parse(`${context.propsValue['catalogItem']}`)
       const bodyProcess = {
         "description": 'Prazo compromisso',
         "body": "",
@@ -340,7 +342,7 @@ export const createTicket = createAction({
         "ticketTypeId": Number(solicitationType),
         "categoryId": categoryId,
         "status": "pendente",
-        "assignedTo": 100440,
+        "assignedTo": ASSIGNED_TO_QUEUE_PROCESS_ID,
         "assignedToUser": Number(body['Responsavel']) || null,
         "parentTicketId": numberProcess.data?.results ? numberProcess.data?.results[0]?.id : null,
         "ticketTypeAdditionalInfo": {
